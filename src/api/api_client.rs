@@ -93,6 +93,10 @@ where
 	additional_extrinsic_params: Option<Params::AdditionalParams>,
 }
 
+pub trait UpdateRuntime {
+	fn update_runtime(&mut self) -> Result<()>;
+}
+
 impl<Signer, Client, Params, Runtime> Api<Signer, Client, Params, Runtime>
 where
 	Runtime: FrameSystemConfig,
@@ -190,9 +194,30 @@ where
 		Ok(Self::new_offline(genesis_hash, metadata, runtime_version, client))
 	}
 
+	// Updates the runtime and metadata of the api via node query.
+	// Ideally, this function is called if a substrate update runtime event is encountered.
+	/*pub fn update_runtime(&mut self) -> Result<()> {
+		let metadata = Self::get_metadata(&self.client)?;
+		debug!("Metadata: {:?}", metadata);
+
+		let runtime_version = Self::get_runtime_version(&self.client)?;
+		info!("Runtime Version: {:?}", runtime_version);
+
+		self.metadata = metadata;
+		self.runtime_version = runtime_version;
+		Ok(())
+	}*/
+}
+
+impl<Signer, Client, Params, Runtime> UpdateRuntime for Api<Signer, Client, Params, Runtime>
+where
+	Client: Request,
+	Params: ExtrinsicParams<Runtime::Index, Runtime::Hash>,
+	Runtime: FrameSystemConfig,
+{
 	/// Updates the runtime and metadata of the api via node query.
 	// Ideally, this function is called if a substrate update runtime event is encountered.
-	pub fn update_runtime(&mut self) -> Result<()> {
+	fn update_runtime(&mut self) -> Result<()> {
 		let metadata = Self::get_metadata(&self.client)?;
 		debug!("Metadata: {:?}", metadata);
 
