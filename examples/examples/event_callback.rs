@@ -32,7 +32,7 @@ async fn main() {
 
 	// Initialize the api.
 	let client = JsonrpseeClient::with_default_url().unwrap();
-	let api = Api::<(), _, PlainTipExtrinsicParams<Runtime>, Runtime>::new(client).unwrap();
+	let mut api = Api::<(), _, PlainTipExtrinsicParams<Runtime>, Runtime>::new(client).unwrap();
 
 	println!("Subscribe to events");
 	let mut subscription = api.subscribe_events().unwrap();
@@ -63,6 +63,10 @@ async fn main() {
 						frame_system::Event::ExtrinsicSuccess { dispatch_info } => {
 							println!("DispatchInfo: {:?}", dispatch_info);
 							return
+						},
+						frame_system::Event::CodeUpdated => {
+							println!("Detected a runtime upgrade");
+							api.update_runtime().unwrap();
 						},
 						_ => {
 							debug!("ignoring unsupported system event");
