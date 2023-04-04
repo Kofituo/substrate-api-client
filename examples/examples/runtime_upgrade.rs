@@ -29,49 +29,65 @@ use substrate_api_client::{
 use codec::Decode;
 use kitchensink_runtime::{Runtime, RuntimeEvent};
 use std::{
+	marker::PhantomData,
 	sync::{Arc, Mutex},
 	thread,
 };
 use substrate_api_client::rpc::Subscribe;
 
-fn auto_runtime_upgrade<Api, Client, Hash>(api_clone: Arc<Mutex<Api>>) -> thread::JoinHandle<()>
+struct AutoRuntimeUpgrader<Api, Client, Hash>
 where
 	Api: SubscribeEvents<Client, Hash> + UpdateRuntime + Send + 'static,
 	Client: Subscribe,
 	Hash: DeserializeOwned + Decode,
 {
-	let receiver = thread::spawn(move || {
-		let mut subscription = {
-			println!("Thread lock try");
-			let lock = api_clone.lock().unwrap();
-			lock.subscribe_events().unwrap()
-		};
-		for _ in 0..5 {
-			let event_records = subscription.next_event::<RuntimeEvent, Hash>().unwrap().unwrap();
-			for event_record in &event_records {
-				println!("decoded: {:?} {:?}", event_record.phase, event_record.event);
-				match &event_record.event {
-					RuntimeEvent::System(system_event) => {
-						println!("********** system event: {:?}", system_event);
-						let mut lock = api_clone.lock().unwrap();
-						println!("Thread lock");
-						lock.update_runtime().unwrap();
-						println!("********** runtime update finished");
-						match &system_event {
-							frame_system::Event::ExtrinsicSuccess { dispatch_info } => {
-								println!("DispatchInfo: {:?}", dispatch_info);
+	api: Arc<Mutex<Api>>,
+	_phantom_client: PhantomData<Client>,
+	_phantom_hash: PhantomData<Hash>,
+}
+
+impl<Api, Client, Hash> AutoRuntimeUpgrader<Api, Client, Hash>
+where
+	Api: SubscribeEvents<Client, Hash> + UpdateRuntime + Send + 'static,
+	Client: Subscribe,
+	Hash: DeserializeOwned + Decode,
+{
+	fn new(api_clone: Arc<Mutex<Api>>) -> Self {
+		AutoRuntimeUpgrader {
+			api: api_clone,
+			_phantom_client: Default::default(),
+			_phantom_hash: Default::default(),
+		}
+	}
+
+	fn auto_runtime_upgrade(&mut self) -> thread::JoinHandle<()> {
+		let api_clone = self.api.clone();
+		let receiver = thread::spawn(move || {
+			let mut subscription = {
+				let lock = api_clone.lock().unwrap();
+				lock.subscribe_events().unwrap()
+			};
+			for _ in 0..5 {
+				let event_records =
+					subscription.next_event::<RuntimeEvent, Hash>().unwrap().unwrap();
+				for event_record in &event_records {
+					match &event_record.event {
+						RuntimeEvent::System(system_event) => match &system_event {
+							frame_system::Event::CodeUpdated => {
+								println!("********** Detected a runtime upgrade");
+								let mut api_lock = api_clone.lock().unwrap();
+								api_lock.update_runtime().unwrap();
+								println!("********** runtime update finished");
 							},
-							_ => {
-								debug!("ignoring unsupported system event");
-							},
-						}
-					},
-					_ => debug!("ignoring unsupported module event: {:?}", event_record.event),
+							_ => {},
+						},
+						_ => {},
+					}
 				}
 			}
-		}
-	});
-	receiver
+		});
+		receiver
+	}
 }
 
 #[tokio::main]
@@ -84,7 +100,8 @@ async fn main() {
 		Api::<(), _, PlainTipExtrinsicParams<Runtime>, Runtime>::new(client).unwrap(),
 	));
 
-	let receiver = auto_runtime_upgrade(Arc::clone(&api));
+	let mut upgrader = AutoRuntimeUpgrader::new(Arc::clone(&api));
+	let receiver = upgrader.auto_runtime_upgrade();
 
 	let mut subscription = {
 		println!("Subscribe to events");
