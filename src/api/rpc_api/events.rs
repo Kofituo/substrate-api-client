@@ -33,7 +33,7 @@ where
 	/// Fetch all block events from node for the given block hash.
 	fn fetch_events_from_block(&self, block_hash: Hash) -> Result<Events<Hash>>;
 
-	/// Fetch all assosciated events for a given extrinsic hash and block hash.
+	/// Fetch all associated events for a given extrinsic hash and block hash.
 	fn fetch_events_for_extrinsic(
 		&self,
 		block_hash: Hash,

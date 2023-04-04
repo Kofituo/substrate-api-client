@@ -44,7 +44,7 @@ pub trait SubmitExtrinsic {
 		Signature: Encode,
 		SignedExtra: Encode;
 
-	/// Submit an encoded, opaque extrsinic to the substrate node.
+	/// Submit an encoded, opaque extrinsic to the substrate node.
 	/// Returns the extrinsic hash.
 	fn submit_opaque_extrinsic(&self, encoded_extrinsic: Bytes) -> Result<Self::Hash>;
 }
