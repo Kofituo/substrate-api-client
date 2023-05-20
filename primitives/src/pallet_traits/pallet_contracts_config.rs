@@ -40,7 +40,6 @@ pub trait ContractsConfig: FrameSystemConfig {
 	type MaxStorageKeyLen: Get<u32>;
 }
 
-#[cfg(feature = "std")]
 impl<T> ContractsConfig for T
 where
 	T: pallet_contracts::Config,
