@@ -49,7 +49,6 @@ pub trait BalancesConfig: crate::FrameSystemConfig {
 	type MaxReserves: Get<u32>;
 }
 
-#[cfg(feature = "std")]
 impl<T> BalancesConfig for T
 where
 	T: pallet_balances::Config,
