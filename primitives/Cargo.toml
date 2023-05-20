@@ -21,7 +21,7 @@ sp-staking = { default-features = false, git = "https://github.com/paritytech/su
 sp-version = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
 
 # substrate std / wasm only
-frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
+frame-system = {  optional=true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
 pallet-assets = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
 pallet-balances = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
 pallet-contracts = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.41" }
