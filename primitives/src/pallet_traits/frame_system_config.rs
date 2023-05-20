@@ -128,7 +128,6 @@ pub trait FrameSystemConfig {
 	type MaxConsumers;
 }
 
-#[cfg(feature = "std")]
 impl<T> FrameSystemConfig for T
 where
 	T: frame_system::Config,
